@@ -25,6 +25,7 @@ podTemplate(cloud: 'kubernetes',
             checkout(scm)
             echo "Current dir: ${PWD}"
             echo "Workspace: " + env.WORKSPACE
+            echo env
         }
 
         stage('NPM install') {
@@ -39,7 +40,7 @@ podTemplate(cloud: 'kubernetes',
                     containers:[
                             containerTemplate(
                                     name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
-                                    ttyEnabled: true, workingDir: env.WORKSPACE, ports: PORT, command: "npm start")
+                                    ttyEnabled: true, workingDir: env.WORKSPACE, ports: env.PORT, command: "npm start")
                     ]) {
                 container("api-testing") {
                     container('node14') {
