@@ -1,0 +1,75 @@
+podTemplate(cloud: 'kubernetes',
+        containers: [
+                containerTemplate(
+                        name: 'node14', image: 'node:14.15.4', ttyEnabled: true, workingDir: env.WORKSPACE
+                ),
+                containerTemplate(
+                        name: 'docker', image: 'trion/jenkins-docker-client', ttyEnabled: true, workingDir: env.WORKSPACE
+                )
+        ],
+        volumes: [
+                hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock')
+        ]
+) {
+    node(POD_LABEL){
+        environment {
+
+            QA = 'true'
+        }
+
+        stage('Checkout scm') {
+            echo "Checking out scm..."
+            checkout(scm)
+            echo "Current dir: ${PWD}"
+            echo "Workspace: " + env.WORKSPACE
+        }
+
+        stage('NPM install'){
+            container('node14') {
+                sh 'npm ci'
+                sh "chmod +x -R ${env.WORKSPACE}"
+            }
+        }
+
+        stage('Test') {
+            container('docker') {
+                withCredentials([usernamePassword(credentialsId: 'jenkins-cicd',
+                        passwordVariable: 'docker_password',
+                        usernameVariable: 'docker_user')]
+                ) {
+                    try {
+                        sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-dev.veks.site"
+                        sh "docker pull nexus-docker-dev.veks.site/api-testing:latest"
+                        sh "docker run --rm -d --name api-testing api-testing:latest"
+                        container('node14') {
+                            sh "npm test"
+                        }
+                    }catch(e){
+                        throw e
+                    }
+                    finally {
+                        sh "docker stop api-testing"
+                    }
+                }
+            }
+        }
+
+//        stage('Docker build'){
+//            container('docker'){
+//                    sh 'docker build -t nexus-docker-dev.veks.site/api-testing:latest .'
+//            }
+//        }
+
+//        stage('Deploy to docker dev registry'){
+//            container('docker') {
+//                withCredentials([usernamePassword(credentialsId: 'jenkins-cicd',
+//                        passwordVariable: 'docker_password',
+//                        usernameVariable: 'docker_user')]
+//                ) {
+//                    sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-dev.veks.site"
+//                    sh "docker push nexus-docker-dev.veks.site/api-testing:latest"
+//                }
+//            }
+//        }
+    }
+}
