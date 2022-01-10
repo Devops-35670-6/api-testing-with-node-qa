@@ -45,7 +45,6 @@ podTemplate(cloud: 'kubernetes',
             stage('Test') {
                     container("api-testing") {
                         container('node14') {
-                            sh "curl http://localhost:$PORT"
                             sh "npm test"
                         }
                     }
@@ -58,8 +57,9 @@ podTemplate(cloud: 'kubernetes',
                             passwordVariable: 'docker_password',
                             usernameVariable: 'docker_user')]
                     ) {
-                        sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-stable.veks.site"
+                        sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-dev.veks.site"
                         sh "docker pull nexus-docker-dev.veks.site/api-testing:latest"
+                        sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-stable.veks.site"
                         sh "docker tag nexus-docker-dev.veks.site/api-testing:latest nexus-docker-stable.veks.site/api-testing:latest"
                         sh "docker push nexus-docker-stable.veks.site/api-testing:latest"
                     }
