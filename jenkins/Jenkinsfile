@@ -43,7 +43,7 @@ podTemplate(cloud: 'kubernetes',
                                 containerTemplate(
                                         name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
                                         ttyEnabled: true, workingDir: env.WORKSPACE, command: "npm start",
-                                        ports:  [portMapping(name: 'api', containerPort: PORT, hostPost: PORT)]
+                                        ports:  [portMapping(name: 'api', containerPort: PORT)]
                                 )
                         ]) {
                     container("api-testing") {
