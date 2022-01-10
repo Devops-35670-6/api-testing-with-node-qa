@@ -47,6 +47,7 @@ podTemplate(cloud: 'kubernetes',
                                 )
                         ]) {
                     container("api-testing") {
+                        sh "curl http://localhost:5000"
                         container('node14') {
                             sh "npm test"
                         }
