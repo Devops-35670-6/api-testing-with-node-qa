@@ -25,7 +25,8 @@ podTemplate(cloud: 'kubernetes',
             checkout(scm)
             echo "Current dir: ${PWD}"
             echo "Workspace: " + env.WORKSPACE
-            echo env
+            echo "" + env.PORT
+            echo "" + BACKEND_API
         }
 
         stage('NPM install') {
