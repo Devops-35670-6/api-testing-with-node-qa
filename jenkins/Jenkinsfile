@@ -5,6 +5,11 @@ podTemplate(cloud: 'kubernetes',
                 ),
                 containerTemplate(
                         name: 'docker', image: 'trion/jenkins-docker-client', ttyEnabled: true, workingDir: env.WORKSPACE
+                ),
+                containerTemplate(
+                        name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
+                        ttyEnabled: true, workingDir: env.WORKSPACE, command: "npm start",
+                        ports:  [portMapping(name: 'api', containerPort: PORT)]
                 )
         ],
         volumes: [
@@ -38,14 +43,6 @@ podTemplate(cloud: 'kubernetes',
             }
 
             stage('Test') {
-                podTemplate(cloud: 'kubernetes',
-                        containers: [
-                                containerTemplate(
-                                        name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
-                                        ttyEnabled: true, workingDir: env.WORKSPACE, command: "npm start",
-                                        ports:  [portMapping(name: 'api', containerPort: PORT)]
-                                )
-                        ]) {
                     container("api-testing") {
                         container('node14') {
                             sleep(600000)
@@ -53,7 +50,7 @@ podTemplate(cloud: 'kubernetes',
                             sh "npm test"
                         }
                     }
-                }
+
             }
 
             stage('Deploy to stable') {
