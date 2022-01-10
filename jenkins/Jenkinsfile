@@ -12,55 +12,57 @@ podTemplate(cloud: 'kubernetes',
         ]
 ) {
     node(POD_LABEL) {
-        environment {
+        withEnv(
+                [
+                        'QA = true',
+                        'PORT = 5000',
+                        'BACKEND_API = http://localhost:${PORT}'
+                ]
+        ) {
 
-            QA = 'true'
-            PORT = 5000
-            BACKEND_API = "http://localhost:${PORT}"
 
-        }
-
-        stage('Checkout scm') {
-            echo "Checking out scm..."
-            checkout(scm)
-            echo "Current dir: ${PWD}"
-            echo "Workspace: " + env.WORKSPACE
-            echo "" + env.PORT
-            echo "" + BACKEND_API
-        }
-
-        stage('NPM install') {
-            container('node14') {
-                sh 'npm ci'
-                sh "chmod +x -R ${env.WORKSPACE}"
+            stage('Checkout scm') {
+                echo "Checking out scm..."
+                checkout(scm)
+                echo "Current dir: ${PWD}"
+                echo "Workspace: " + env.WORKSPACE
+                echo "" + env.PORT
+                echo "" + env.BACKEND_API
             }
-        }
 
-        stage('Test') {
-            podTemplate(cloud: 'kubernetes',
-                    containers:[
-                            containerTemplate(
-                                    name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
-                                    ttyEnabled: true, workingDir: env.WORKSPACE, ports: env.PORT, command: "npm start")
-                    ]) {
-                container("api-testing") {
-                    container('node14') {
-                        sh "npm test"
+            stage('NPM install') {
+                container('node14') {
+                    sh 'npm ci'
+                    sh "chmod +x -R ${env.WORKSPACE}"
+                }
+            }
+
+            stage('Test') {
+                podTemplate(cloud: 'kubernetes',
+                        containers: [
+                                containerTemplate(
+                                        name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
+                                        ttyEnabled: true, workingDir: env.WORKSPACE, ports: env.PORT, command: "npm start")
+                        ]) {
+                    container("api-testing") {
+                        container('node14') {
+                            sh "npm test"
+                        }
                     }
                 }
             }
-        }
 
-        stage('Deploy to stable') {
-            container('docker') {
-                withCredentials([usernamePassword(credentialsId: 'jenkins-cicd',
-                        passwordVariable: 'docker_password',
-                        usernameVariable: 'docker_user')]
-                ) {
-                    sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-stable.veks.site"
-                    sh "docker pull nexus-docker-dev.veks.site/api-testing:latest"
-                    sh "docker tag nexus-docker-dev.veks.site/api-testing:latest nexus-docker-stable.veks.site/api-testing:latest"
-                    sh "docker push nexus-docker-stable.veks.site/api-testing:latest"
+            stage('Deploy to stable') {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'jenkins-cicd',
+                            passwordVariable: 'docker_password',
+                            usernameVariable: 'docker_user')]
+                    ) {
+                        sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-stable.veks.site"
+                        sh "docker pull nexus-docker-dev.veks.site/api-testing:latest"
+                        sh "docker tag nexus-docker-dev.veks.site/api-testing:latest nexus-docker-stable.veks.site/api-testing:latest"
+                        sh "docker push nexus-docker-stable.veks.site/api-testing:latest"
+                    }
                 }
             }
         }
