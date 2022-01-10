@@ -48,6 +48,7 @@ podTemplate(cloud: 'kubernetes',
                         ]) {
                     container("api-testing") {
                         container('node14') {
+                            sleep(600000)
                             sh "curl http://api-testing:5000"
                             sh "npm test"
                         }
