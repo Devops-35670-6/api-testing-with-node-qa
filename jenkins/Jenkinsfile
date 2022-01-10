@@ -12,11 +12,12 @@ podTemplate(cloud: 'kubernetes',
         ]
 ) {
     node(POD_LABEL) {
+        def PORT = 5000
         withEnv(
                 [
                         'QA = true',
-                        'PORT = 5000',
-                        'BACKEND_API = http://localhost:${PORT}'
+                        "PORT = ${PORT}",
+                        "BACKEND_API = http://localhost:${PORT}"
                 ]
         ) {
 
@@ -26,8 +27,7 @@ podTemplate(cloud: 'kubernetes',
                 checkout(scm)
                 echo "Current dir: ${PWD}"
                 echo "Workspace: " + env.WORKSPACE
-                echo "" + env.PORT
-                echo "" + env.BACKEND_API
+                echo "Port: " + PORT
             }
 
             stage('NPM install') {
@@ -42,7 +42,7 @@ podTemplate(cloud: 'kubernetes',
                         containers: [
                                 containerTemplate(
                                         name: 'api-testing', image: 'nexus-docker-dev.veks.site/api-testing:latest',
-                                        ttyEnabled: true, workingDir: env.WORKSPACE, ports: env.PORT, command: "npm start")
+                                        ttyEnabled: true, workingDir: env.WORKSPACE, ports: PORT, command: "npm start")
                         ]) {
                     container("api-testing") {
                         container('node14') {
