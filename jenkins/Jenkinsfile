@@ -40,7 +40,7 @@ podTemplate(cloud: 'kubernetes',
                     try {
                         sh "docker login -u ${docker_user} -p ${docker_password} nexus-docker-dev.veks.site"
                         sh "docker pull nexus-docker-dev.veks.site/api-testing:latest"
-                        sh "docker run --rm -d --name api-testing api-testing:latest"
+                        sh "docker run --rm -d --name api-testing nexus-docker-dev.veks.site/api-testing:latest"
                         container('node14') {
                             sh "npm test"
                         }
